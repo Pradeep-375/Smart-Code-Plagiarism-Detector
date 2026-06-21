@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Compare Files — CodeGuard{% endblock %}
+{% block page_title %}Compare Code Files{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4 fade-in">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="card-title"><i class="bi bi-intersect text-primary"></i> Select Files to Compare</h6>
+      </div>
+      <div class="card-body">
+        {% if uploads|length < 2 %}
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          You need at least 2 uploaded files to compare.
+          <a href="{{ url_for('upload') }}" class="alert-link">Upload files →</a>
+        </div>
+        {% else %}
+        <form method="POST" action="{{ url_for('compare') }}">
+          <div class="mb-3">
+            <label class="form-label">File A</label>
+            <select name="file1_id" class="form-select" required>
+              <option value="">— Select first file —</option>
+              {% for u in uploads %}
+              <option value="{{ u.id }}">
+                {{ u.original_filename }}
+                {% if u.uploader_name and session.role != 'student' %}({{ u.uploader_name }}){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="text-center my-2">
+            <div style="width:36px;height:36px;background:var(--primary-light);border-radius:50%;display:inline-grid;place-items:center;color:var(--primary);font-size:18px;">
+              <i class="bi bi-arrow-down-up"></i>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">File B</label>
+            <select name="file2_id" class="form-select" required>
+              <option value="">— Select second file —</option>
+              {% for u in uploads %}
+              <option value="{{ u.id }}">
+                {{ u.original_filename }}
+                {% if u.uploader_name and session.role != 'student' %}({{ u.uploader_name }}){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100" id="compareBtn">
+            <i class="bi bi-search"></i> Analyze Plagiarism
+          </button>
+        </form>
+        {% endif %}
+
+        <div class="mt-4">
+          <div class="p-3 rounded" style="background:var(--surface-2);border:1px solid var(--border);">
+            <p class="fw-600 mb-2" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);">
+              <i class="bi bi-info-circle me-1"></i>Detection Methods
+            </p>
+            {% for method, weight, icon in [
+              ('Token Matching','30%','bi-code-square'),
+              ('AST Analysis','30%','bi-diagram-3'),
+              ('Structure Similarity','20%','bi-layers'),
+              ('Logic Similarity','20%','bi-cpu'),
+            ] %}
+            <div class="d-flex align-items-center justify-content-between mb-2" style="font-size:12.5px;">
+              <span><i class="bi {{ icon }} me-2 text-primary"></i>{{ method }}</span>
+              <span class="fw-600 text-primary">{{ weight }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8 fade-in fade-in-2">
+    <!-- Risk level guide -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <h6 class="card-title"><i class="bi bi-speedometer2 text-primary"></i> Similarity Score Guide</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% for level, color, icon, label, desc in [
+            ('Low','#2ec4b6','bi-check-circle-fill','0% – 30%','Likely independent work with minimal overlap'),
+            ('Medium','#ff9f1c','bi-exclamation-circle-fill','31% – 60%','Suspicious similarity — manual review advised'),
+            ('High','#e63946','bi-x-circle-fill','61% – 100%','Strong indication of plagiarism'),
+          ] %}
+          <div class="col-md-4">
+            <div class="p-3 rounded text-center" style="background:{{ color }}18;border:1px solid {{ color }}40;">
+              <i class="bi {{ icon }}" style="font-size:24px;color:{{ color }};"></i>
+              <div class="fw-700 mt-1" style="color:{{ color }};">{{ label }}</div>
+              <div class="fw-600 mt-1" style="font-size:13px;">{{ level }} Similarity</div>
+              <div class="text-muted mt-1" style="font-size:11.5px;">{{ desc }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- File list summary -->
+    <div class="card">
+      <div class="card-header">
+        <h6 class="card-title"><i class="bi bi-folder2 text-primary"></i> Available Files <span class="badge bg-primary ms-1">{{ uploads|length }}</span></h6>
+        <a href="{{ url_for('upload') }}" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-plus"></i> Upload More
+        </a>
+      </div>
+      <div class="card-body p-0">
+        {% if uploads %}
+        <div class="table-responsive" style="max-height:320px;overflow-y:auto;">
+          <table class="table mb-0">
+            <thead><tr><th>#</th><th>File</th><th>Language</th><th>Size</th><th>Date</th></tr></thead>
+            <tbody>
+              {% for u in uploads %}
+              <tr>
+                <td class="text-muted" style="font-size:12px;">{{ loop.index }}</td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <span>{{ {'py':'🐍','java':'☕','c':'⚙️','cpp':'🔧'}.get(u.language,'📄') }}</span>
+                    <span class="font-mono" style="font-size:12px;">{{ u.original_filename }}</span>
+                  </div>
+                </td>
+                <td><span class="badge bg-secondary text-uppercase" style="font-size:10px;">{{ u.language }}</span></td>
+                <td style="font-size:12px;color:var(--text-muted);">{{ (u.file_size/1024)|round(1) }} KB</td>
+                <td style="font-size:12px;color:var(--text-muted);">
+                  {{ u.upload_date.strftime('%d %b') if u.upload_date else '-' }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+          <p class="text-muted mb-2">No files uploaded yet.</p>
+          <a href="{{ url_for('upload') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-upload me-1"></i>Upload Files
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('compareBtn')?.addEventListener('click', function() {
+  this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Analyzing...';
+  this.disabled = true;
+});
+</script>
+{% endblock %}

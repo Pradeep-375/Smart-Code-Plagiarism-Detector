@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — CodeGuard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+  <!-- Stat cards -->
+  {% set cards = [
+    ('total_uploads',     'Total Uploads',     'bi-cloud-upload-fill', '#4361ee', '#eef0fd'),
+    ('total_comparisons', 'Comparisons',        'bi-intersect',         '#7209b7', '#f3e8ff'),
+    ('avg_similarity',    'Avg Similarity (%)', 'bi-percent',           '#ff9f1c', '#fff4e6'),
+    ('high_cases',        'High Risk Cases',    'bi-exclamation-triangle-fill', '#e63946', '#fdecea'),
+  ] %}
+  {% for key, label, icon, color, bg in cards %}
+  <div class="col-6 col-xl-3 fade-in fade-in-{{ loop.index }}">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:{{ bg }};color:{{ color }}">
+        <i class="bi {{ icon }}"></i>
+      </div>
+      <div class="stat-info">
+        <div class="stat-value" data-count="{{ stats[key] }}">{{ stats[key] }}</div>
+        <div class="stat-label">{{ label }}</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- Distribution chart -->
+  <div class="col-md-5 fade-in">
+    <div class="card h-100">
+      <div class="card-header">
+        <h6 class="card-title"><i class="bi bi-pie-chart-fill text-primary"></i> Similarity Distribution</h6>
+      </div>
+      <div class="card-body d-flex flex-column align-items-center justify-content-center">
+        <canvas id="distChart"
+          data-low="{{ dist.low }}"
+          data-medium="{{ dist.medium }}"
+          data-high="{{ dist.high }}"
+          style="max-height:240px;"></canvas>
+        {% if dist.low == 0 and dist.medium == 0 and dist.high == 0 %}
+        <p class="text-muted mt-3 mb-0" style="font-size:13px;">No comparisons yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Monthly trend -->
+  <div class="col-md-7 fade-in fade-in-2">
+    <div class="card h-100">
+      <div class="card-header">
+        <h6 class="card-title"><i class="bi bi-bar-chart-fill text-primary"></i> Monthly Comparisons</h6>
+      </div>
+      <div class="card-body">
+        {% set trend_labels = trend | map(attribute='month') | list %}
+        {% set trend_values = trend | map(attribute='comparisons') | list %}
+        <canvas id="trendChart"
+          data-labels='{{ trend_labels | tojson }}'
+          data-values='{{ trend_values | tojson }}'
+          style="max-height:220px;"></canvas>
+        {% if not trend %}
+        <p class="text-muted text-center mt-3" style="font-size:13px;">No data yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Recent comparisons -->
+  <div class="col-lg-7 fade-in">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="card-title"><i class="bi bi-clock-history text-primary"></i> Recent Comparisons</h6>
+        <a href="{{ url_for('reports') }}" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="card-body p-0">
+        {% if recent %}
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>File A</th>
+                <th>File B</th>
+                <th>Score</th>
+                <th>Level</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in recent %}
+              <tr>
+                <td class="font-mono" style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                  {{ c.file1_name }}
+                </td>
+                <td class="font-mono" style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                  {{ c.file2_name }}
+                </td>
+                <td>
+                  <span class="fw-700" style="color:{% if c.similarity_score > 60 %}#e63946{% elif c.similarity_score > 30 %}#ff9f1c{% else %}#2ec4b6{% endif %}">
+                    {{ "%.1f"|format(c.similarity_score) }}%
+                  </span>
+                </td>
+                <td>
+                  <span class="badge-level {{ c.plagiarism_level }}">{{ c.plagiarism_level|upper }}</span>
+                </td>
+                <td style="font-size:12px;color:var(--text-muted);">
+                  {{ c.comparison_date.strftime('%d %b %Y') if c.comparison_date else '-' }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+          <i class="bi bi-clipboard-x" style="font-size:36px;color:var(--border);"></i>
+          <p class="text-muted mt-2 mb-0">No comparisons yet.</p>
+          <a href="{{ url_for('compare') }}" class="btn btn-primary btn-sm mt-3">
+            <i class="bi bi-intersect me-1"></i>Start Comparing
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Top uploaders / Quick actions -->
+  <div class="col-lg-5 fade-in fade-in-2">
+    {% if session.role in ['faculty', 'admin'] %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h6 class="card-title"><i class="bi bi-trophy-fill text-warning"></i> Top Uploaders</h6>
+      </div>
+      <div class="card-body p-0">
+        {% if top_uploaders %}
+        <ul class="list-group list-group-flush">
+          {% for u in top_uploaders %}
+          <li class="list-group-item d-flex align-items-center justify-content-between"
+              style="background:transparent;border-color:var(--border);padding:10px 16px;">
+            <div class="d-flex align-items-center gap-2">
+              <div style="width:28px;height:28px;background:var(--primary);border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700;">
+                {{ loop.index }}
+              </div>
+              <span style="font-size:13px;">{{ u.name }}</span>
+            </div>
+            <span class="badge bg-primary rounded-pill">{{ u.upload_count }} uploads</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted text-center py-3 mb-0" style="font-size:13px;">No uploads yet.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick actions -->
+    <div class="card">
+      <div class="card-header">
+        <h6 class="card-title"><i class="bi bi-lightning-fill text-primary"></i> Quick Actions</h6>
+      </div>
+      <div class="card-body d-flex flex-column gap-2">
+        <a href="{{ url_for('upload') }}" class="btn btn-outline-primary w-100 justify-content-start">
+          <i class="bi bi-cloud-upload"></i> Upload Code Files
+        </a>
+        <a href="{{ url_for('compare') }}" class="btn btn-outline-primary w-100 justify-content-start">
+          <i class="bi bi-intersect"></i> Compare Two Files
+        </a>
+        {% if session.role in ['faculty','admin'] %}
+        <a href="{{ url_for('batch_compare') }}" class="btn btn-outline-secondary w-100 justify-content-start">
+          <i class="bi bi-layers"></i> Batch Comparison
+        </a>
+        <a href="{{ url_for('analytics') }}" class="btn btn-outline-secondary w-100 justify-content-start">
+          <i class="bi bi-bar-chart"></i> View Analytics
+        </a>
+        {% endif %}
+        <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary w-100 justify-content-start">
+          <i class="bi bi-file-earmark-text"></i> View Reports
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

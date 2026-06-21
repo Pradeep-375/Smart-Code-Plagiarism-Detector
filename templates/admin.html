@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel — CodeGuard{% endblock %}
+{% block page_title %}Admin Panel — User Management{% endblock %}
+
+{% block content %}
+<!-- Stats row -->
+<div class="row g-3 mb-4">
+  {% for label, val, icon, color, bg in [
+    ('Total Users',       stats.total_users,        'bi-people-fill',        '#4361ee', '#eef0fd'),
+    ('Total Uploads',     stats.total_uploads,      'bi-cloud-upload-fill',  '#7209b7', '#f3e8ff'),
+    ('Total Comparisons', stats.total_comparisons,  'bi-intersect',          '#ff9f1c', '#fff4e6'),
+    ('High Risk Cases',   stats.high_cases,         'bi-shield-exclamation', '#e63946', '#fdecea'),
+  ] %}
+  <div class="col-6 col-xl-3 fade-in fade-in-{{ loop.index }}">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:{{ bg }};color:{{ color }}">
+        <i class="bi {{ icon }}"></i>
+      </div>
+      <div class="stat-info">
+        <div class="stat-value">{{ val }}</div>
+        <div class="stat-label">{{ label }}</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card fade-in">
+  <div class="card-header">
+    <h6 class="card-title">
+      <i class="bi bi-person-lines-fill text-primary"></i> Registered Users
+      <span class="badge bg-primary ms-2">{{ users|length }}</span>
+    </h6>
+    <div class="d-flex gap-2">
+      <input type="text" id="userSearch" class="form-control form-control-sm" placeholder="Search users..." style="width:200px;">
+      <select id="roleFilter" class="form-select form-select-sm" style="width:130px;">
+        <option value="">All Roles</option>
+        <option value="student">Student</option>
+        <option value="faculty">Faculty</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if users %}
+    <div class="table-responsive">
+      <table class="table mb-0" id="usersTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Joined</th>
+            <th>Last Login</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr data-role="{{ u.role }}">
+            <td class="text-muted" style="font-size:12px;">{{ loop.index }}</td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div style="width:32px;height:32px;background:var(--primary);border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0;">
+                  {{ u.name[0].upper() }}
+                </div>
+                <span style="font-size:13.5px;font-weight:500;">{{ u.name }}</span>
+              </div>
+            </td>
+            <td style="font-size:13px;color:var(--text-muted);">{{ u.email }}</td>
+            <td>
+              <span class="badge rounded-pill
+                {% if u.role == 'admin' %}bg-danger
+                {% elif u.role == 'faculty' %}bg-warning text-dark
+                {% else %}bg-info text-dark{% endif %}"
+                style="font-size:11px;">
+                {{ u.role|capitalize }}
+              </span>
+            </td>
+            <td style="font-size:12px;color:var(--text-muted);">
+              {{ u.created_at.strftime('%d %b %Y') if u.created_at else '-' }}
+            </td>
+            <td style="font-size:12px;color:var(--text-muted);">
+              {{ u.last_login.strftime('%d %b %Y %H:%M') if u.last_login else 'Never' }}
+            </td>
+            <td>
+              {% if u.is_active %}
+              <span class="badge" style="background:rgba(46,196,182,.15);color:#0d9488;">Active</span>
+              {% else %}
+              <span class="badge" style="background:rgba(230,57,70,.15);color:#dc2626;">Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="d-flex gap-1">
+                {% if u.id != session.user_id %}
+                <form method="POST" action="{{ url_for('toggle_user', uid=u.id) }}" style="display:inline">
+                  <button type="submit" class="btn btn-sm {% if u.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                          title="{% if u.is_active %}Deactivate{% else %}Activate{% endif %}">
+                    <i class="bi {% if u.is_active %}bi-pause-circle{% else %}bi-play-circle{% endif %}"></i>
+                  </button>
+                </form>
+                <form method="POST" action="{{ url_for('delete_user_admin', uid=u.id) }}" style="display:inline">
+                  <button type="submit" class="btn btn-sm btn-outline-danger"
+                          data-confirm="Delete user {{ u.name }}? This will remove all their data."
+                          title="Delete">
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                </form>
+                {% else %}
+                <span class="text-muted" style="font-size:12px;padding:4px 8px;">You</span>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <i class="bi bi-people" style="font-size:48px;color:var(--border);"></i>
+      <p class="text-muted mt-2">No users found.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+const userSearch = document.getElementById('userSearch');
+const roleFilter = document.getElementById('roleFilter');
+function filterUsers() {
+  const q    = userSearch.value.toLowerCase();
+  const role = roleFilter.value;
+  document.querySelectorAll('#usersTable tbody tr').forEach(row => {
+    const text    = row.textContent.toLowerCase();
+    const rowRole = row.dataset.role;
+    row.style.display = ((!q || text.includes(q)) && (!role || rowRole === role)) ? '' : 'none';
+  });
+}
+userSearch?.addEventListener('input', filterUsers);
+roleFilter?.addEventListener('change', filterUsers);
+</script>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Batch Compare — CodeGuard{% endblock %}
+{% block page_title %}Batch Comparison{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4 fade-in">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="card-title"><i class="bi bi-layers-fill text-primary"></i> Select Files for Batch</h6>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('batch_compare') }}" id="batchForm">
+          <div class="mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <label class="form-label mb-0">Select Files (2–10)</label>
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="selectAll">
+                <label class="form-check-label" for="selectAll" style="font-size:12px;">Select All</label>
+              </div>
+            </div>
+            <div style="max-height:320px;overflow-y:auto;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:8px;">
+              {% if uploads %}
+              {% for u in uploads %}
+              <div class="form-check py-1 px-2 rounded" style="transition:background .15s;"
+                   onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">
+                <input class="form-check-input file-checkbox" type="checkbox" name="file_ids" value="{{ u.id }}" id="f{{ u.id }}">
+                <label class="form-check-label d-flex align-items-center gap-2" for="f{{ u.id }}" style="font-size:12.5px;cursor:pointer;">
+                  <span>{{ {'py':'🐍','java':'☕','c':'⚙️','cpp':'🔧'}.get(u.language,'📄') }}</span>
+                  <span class="font-mono text-truncate" style="max-width:160px;">{{ u.original_filename }}</span>
+                  <span class="badge bg-secondary text-uppercase ms-auto" style="font-size:10px;">{{ u.language }}</span>
+                </label>
+              </div>
+              {% endfor %}
+              {% else %}
+              <p class="text-muted text-center py-3 mb-0" style="font-size:13px;">No files available.</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="alert alert-info py-2" style="font-size:12px;">
+            <i class="bi bi-info-circle me-1"></i>
+            All selected files will be compared pair-by-pair. With N files, N×(N-1)/2 comparisons are made.
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100" {% if not uploads %}disabled{% endif %}
+                  onclick="this.innerHTML='<span class=\'spinner-border spinner-border-sm me-2\'></span>Running...';this.disabled=true;this.form.submit()">
+            <i class="bi bi-play-fill"></i> Run Batch Comparison
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8 fade-in fade-in-2">
+    {% if results %}
+    <div class="card">
+      <div class="card-header">
+        <h6 class="card-title">
+          <i class="bi bi-table text-primary"></i> Batch Results
+          <span class="badge bg-primary ms-2">{{ results|length }} pairs</span>
+        </h6>
+        {% set high_count = results | selectattr('level','equalto','high') | list | length %}
+        {% if high_count > 0 %}
+        <span class="badge bg-danger">{{ high_count }} High Risk</span>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>File A</th>
+                <th>File B</th>
+                <th>Score</th>
+                <th>Level</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in results | sort(attribute='score', reverse=True) %}
+              <tr>
+                <td class="text-muted" style="font-size:12px;">{{ loop.index }}</td>
+                <td class="font-mono" style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.file1 }}</td>
+                <td class="font-mono" style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.file2 }}</td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="progress flex-1" style="height:6px;min-width:60px;">
+                      <div class="progress-bar {% if r.score > 60 %}bg-danger{% elif r.score > 30 %}bg-warning{% else %}bg-success{% endif %}"
+                           style="width:{{ r.score }}%"></div>
+                    </div>
+                    <span class="fw-700" style="font-size:13px;color:{% if r.score > 60 %}#e63946{% elif r.score > 30 %}#ff9f1c{% else %}#2ec4b6{% endif %};">
+                      {{ r.score }}%
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge-level {{ r.level }}">{{ r.level|upper }}</span>
+                </td>
+                <td>
+                  <a href="{{ url_for('compare_result', cid=r.cid) }}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i> View
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="card h-100">
+      <div class="card-body d-flex flex-column align-items-center justify-content-center text-center py-5">
+        <i class="bi bi-layers" style="font-size:56px;color:var(--border);"></i>
+        <h5 class="mt-3 mb-2">No Results Yet</h5>
+        <p class="text-muted mb-0" style="max-width:360px;font-size:13px;">
+          Select files from the left panel and click "Run Batch Comparison" to compare all files simultaneously.
+        </p>
+        {% if not uploads %}
+        <a href="{{ url_for('upload') }}" class="btn btn-primary mt-3">
+          <i class="bi bi-upload me-1"></i>Upload Files First
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Register — Smart Code Plagiarism Detector{% endblock %}
+
+{% block public_content %}
+<div style="min-height:100vh;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);display:flex;align-items:center;justify-content:center;padding:24px;">
+  <div style="width:100%;max-width:460px;">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="brand-icon-lg"><i class="bi bi-person-plus-fill"></i></div>
+        <h1>Create Account</h1>
+        <p>Join the plagiarism detection platform</p>
+      </div>
+      <div class="auth-body">
+        <form method="POST" action="{{ url_for('register') }}">
+          <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            <div class="input-group">
+              <span class="input-group-text" style="background:var(--surface-2);border-color:var(--border);"><i class="bi bi-person text-muted"></i></span>
+              <input type="text" name="name" class="form-control" placeholder="John Doe" required autofocus>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email Address</label>
+            <div class="input-group">
+              <span class="input-group-text" style="background:var(--surface-2);border-color:var(--border);"><i class="bi bi-envelope text-muted"></i></span>
+              <input type="email" name="email" class="form-control" placeholder="you@university.edu" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Role</label>
+            <select name="role" class="form-select">
+              <option value="student">🎓 Student</option>
+              <option value="faculty">👨‍🏫 Faculty</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <div class="input-group">
+              <span class="input-group-text" style="background:var(--surface-2);border-color:var(--border);"><i class="bi bi-lock text-muted"></i></span>
+              <input type="password" name="password" id="pw1" class="form-control" placeholder="Min. 6 characters" required oninput="checkStrength(this.value)">
+            </div>
+            <div class="mt-1">
+              <div class="progress" style="height:4px;">
+                <div class="progress-bar" id="pwStrength" style="width:0%;transition:width .3s"></div>
+              </div>
+              <small id="pwStrengthLabel" class="text-muted" style="font-size:11px;"></small>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Confirm Password</label>
+            <div class="input-group">
+              <span class="input-group-text" style="background:var(--surface-2);border-color:var(--border);"><i class="bi bi-lock-fill text-muted"></i></span>
+              <input type="password" name="confirm_password" class="form-control" placeholder="Re-enter password" required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 py-2">
+            <i class="bi bi-person-check me-2"></i>Create Account
+          </button>
+        </form>
+
+        <div class="text-center mt-4">
+          <p class="text-muted mb-0" style="font-size:13px;">
+            Already have an account? <a href="{{ url_for('login') }}" class="fw-600">Sign in</a>
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="text-center mt-3">
+      <a href="{{ url_for('index') }}" style="color:rgba(255,255,255,.4);font-size:12px;">← Back to home</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function checkStrength(pw) {
+  const bar   = document.getElementById('pwStrength');
+  const label = document.getElementById('pwStrengthLabel');
+  let score = 0;
+  if (pw.length >= 6)  score++;
+  if (pw.length >= 10) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+  const levels = [
+    { w: '20%',  cls: 'bg-danger',  txt: 'Very weak' },
+    { w: '40%',  cls: 'bg-danger',  txt: 'Weak' },
+    { w: '60%',  cls: 'bg-warning', txt: 'Fair' },
+    { w: '80%',  cls: 'bg-info',    txt: 'Good' },
+    { w: '100%', cls: 'bg-success', txt: 'Strong' },
+  ];
+  const lvl = levels[Math.max(0, score - 1)] || levels[0];
+  bar.style.width  = lvl.w;
+  bar.className    = 'progress-bar ' + lvl.cls;
+  label.textContent = pw.length > 0 ? lvl.txt : '';
+}
+</script>
+{% endblock %}

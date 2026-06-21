@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Smart Code Plagiarism Detector — Home{% endblock %}
+
+{% block public_content %}
+<div class="hero-section">
+  <div class="container position-relative">
+    <div class="hero-icon"><i class="bi bi-shield-check"></i></div>
+    <h1 class="hero-title">Smart Code<br>Plagiarism Detector</h1>
+    <p class="hero-subtitle">
+      Advanced AI-powered plagiarism detection using AST analysis, token matching,
+      structural comparison, and logic similarity detection.
+    </p>
+    <div class="d-flex flex-wrap gap-3 justify-content-center">
+      <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg px-5">
+        <i class="bi bi-box-arrow-in-right"></i> Sign In
+      </a>
+      <a href="{{ url_for('register') }}" class="btn btn-outline-light btn-lg px-5">
+        <i class="bi bi-person-plus"></i> Register
+      </a>
+    </div>
+
+    <div class="feature-grid mt-5">
+      <div class="feature-card">
+        <i class="bi bi-diagram-3-fill"></i>
+        <h4>AST Analysis</h4>
+        <p>Parse abstract syntax trees to detect structural code similarities beyond text matching.</p>
+      </div>
+      <div class="feature-card">
+        <i class="bi bi-braces"></i>
+        <h4>Token Matching</h4>
+        <p>Tokenize source code and compare sequences to find copied logic with renamed variables.</p>
+      </div>
+      <div class="feature-card">
+        <i class="bi bi-bar-chart-line-fill"></i>
+        <h4>Similarity Score</h4>
+        <p>Weighted algorithm combines 4 detection methods for a precise plagiarism percentage.</p>
+      </div>
+      <div class="feature-card">
+        <i class="bi bi-file-earmark-pdf-fill"></i>
+        <h4>Detailed Reports</h4>
+        <p>Export comprehensive PDF and CSV reports with highlighted matching sections.</p>
+      </div>
+      <div class="feature-card">
+        <i class="bi bi-layers-fill"></i>
+        <h4>Batch Compare</h4>
+        <p>Compare entire assignment batches simultaneously and identify all suspicious pairs.</p>
+      </div>
+      <div class="feature-card">
+        <i class="bi bi-people-fill"></i>
+        <h4>Role-Based Access</h4>
+        <p>Separate interfaces for students, faculty, and admins with tailored functionality.</p>
+      </div>
+    </div>
+
+    <!-- Languages supported -->
+    <div class="mt-5 text-center">
+      <p class="mb-3" style="opacity:.6;font-size:13px;letter-spacing:.5px;text-transform:uppercase">Supports</p>
+      <div class="d-flex flex-wrap gap-3 justify-content-center">
+        {% for lang, icon, color in [('Python', '🐍', '#3776ab'), ('Java', '☕', '#f89820'), ('C', '⚙️', '#555'), ('C++', '🔧', '#00599c')] %}
+        <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px 20px;font-size:14px;font-weight:600;">
+          {{ icon }} {{ lang }}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
