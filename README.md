@@ -301,5 +301,6 @@ server {
 
 ## 📄 License
 
-This project is developed as a B.Tech Final Year Major Project.  
+This project is developed by
+Medaboina Pradeep
 © 2024 — All rights reserved.
