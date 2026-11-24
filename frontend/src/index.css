@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  body { @apply bg-slate-50 text-slate-800 antialiased dark:bg-navy-950 dark:text-slate-200; font-family: Inter, system-ui, sans-serif; }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-brand-500; }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+@layer components {
+  .card { @apply rounded-2xl border border-slate-200 bg-white shadow-card dark:border-navy-800 dark:bg-navy-900; }
+  .input { @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition focus:border-brand-500 focus:ring-2 focus:ring-brand-200 dark:border-navy-700 dark:bg-navy-950 dark:text-slate-100 dark:focus:ring-brand-900; }
+  .label { @apply mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300; }
+}
+
+/* Monaco match highlighting */
+.match-line { background: rgba(99, 102, 241, 0.16); }
+.match-line-active { background: rgba(245, 158, 11, 0.28); }
+.match-gutter { border-left: 3px solid #6366f1; margin-left: 3px; }
+.match-gutter-active { border-left: 3px solid #f59e0b; margin-left: 3px; }
